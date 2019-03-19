@@ -1,9 +1,60 @@
 #directory cmake-proxies/libflac
-set( TARGET libflac )
-set( TARGET_SOURCE ${LIB_SRC_DIRECTORY}${TARGET} )
-project( ${TARGET} )
 
-set( SOURCES 
+set(TARGET libflac)
+set(TARGET_SOURCE ${LIB_SRC_DIRECTORY}${TARGET})
+project(${TARGET} C ASM_NASM)
+
+option(FLAC_NOASM "Don't use asm optimizations" OFF)
+
+add_library(${TARGET} STATIC
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/bitmath.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/bitreader.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/bitwriter.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/cpu.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/crc.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/fixed.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/fixed_intrin_sse2.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/fixed_intrin_ssse3.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/float.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/format.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/lpc.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/lpc_intrin_sse.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/lpc_intrin_sse2.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/lpc_intrin_sse41.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/lpc_intrin_avx2.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/md5.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/memory.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/metadata_iterators.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/metadata_object.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_decoder.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_encoder.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_encoder_intrin_sse2.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_encoder_intrin_ssse3.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_encoder_intrin_avx2.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/stream_encoder_framing.c"
+    "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/window.c")
+
+target_compile_definitions(${TARGET} PRIVATE
+    $<$<CONFIG:Debug>:FLAC__OVERFLOW_DETECT>
+    $<$<BOOL:${FLAC_NOASM}>:FLAC__NO_ASM>)
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+    if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT FLAC_NOASM)
+        target_sources(${TARGET} PRIVATE
+            "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/ia32/cpu_asm.nasm"
+            "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/ia32/fixed_asm.nasm"
+            "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/ia32/lpc_asm.nasm")
+
+        target_include_directories(
+            ${TARGET} PRIVATE "${LIB_SRC_DIRECTORY}libflac/src/libFLAC/ia32/")
+    endif()
+endif()
+
+if(WIN32)
+else()
+endif()
+
+set( SOURCES
 #${LIB_SRC_DIRECTORY}libflac/src/flac/analyze.c
 #${LIB_SRC_DIRECTORY}libflac/src/flac/decode.c
 #${LIB_SRC_DIRECTORY}libflac/src/flac/encode.c
@@ -106,8 +157,8 @@ ${LIB_SRC_DIRECTORY}libflac/src/share/win_utf8_io/win_utf8_io.c
 #${LIB_SRC_DIRECTORY}libflac/src/utils/flactimer/main.cpp
 )
 # This defines the #define on both Windows and Linux.
-add_definitions( 
--DWIN32 
+add_definitions(
+-DWIN32
 -D_LIB
 -DFLAC__CPU_IA32
 -DFLAC__SSE_OS
@@ -115,13 +166,9 @@ add_definitions(
 -DFLAC__ALIGN_MALLOC_DATA
 -DVERSION="1.3.1"
 -DFLAC__NO_DLL
--DFLAC__OVERFLOW_DETECT
 )
-add_library( ${TARGET} STATIC ${SOURCES})
 
-target_include_directories( ${TARGET} PRIVATE 
+target_include_directories( ${TARGET} PRIVATE
 ${TARGET_SOURCE}/src/libFLAC/include
 ${TARGET_SOURCE}/include
 )
-
-target_link_libraries( ${TARGET} )
