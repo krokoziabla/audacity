@@ -3,7 +3,7 @@ set( TARGET libid3tag )
 set( TARGET_SOURCE ${LIB_SRC_DIRECTORY}${TARGET} )
 project( ${TARGET} )
 
-set( SOURCES 
+set( SOURCES
 ${LIB_SRC_DIRECTORY}libid3tag/compat.c
 ${LIB_SRC_DIRECTORY}libid3tag/crc.c
 ${LIB_SRC_DIRECTORY}libid3tag/debug.c
@@ -22,17 +22,19 @@ ${LIB_SRC_DIRECTORY}libid3tag/utf8.c
 ${LIB_SRC_DIRECTORY}libid3tag/util.c
 ${LIB_SRC_DIRECTORY}libid3tag/version.c
 )
-# This defines the #define on both Windows and Linux.
-add_definitions( 
--D_LIB
-)
 add_library( ${TARGET} STATIC ${SOURCES})
 
-find_package(wxWidgets REQUIRED COMPONENTS net core base)
-#include( ${wxWidgets_USE_FILE} )
-
-target_include_directories( ${TARGET} PRIVATE 
-${wxWidgets_ROOT_DIR}/src/zlib
-)
-
-target_link_libraries( ${TARGET} )
+find_package(ZLIB)
+if(ZLIB_FOUND)
+    include(ExternalProject)
+    ExternalProject_Add(zlib
+        URL "http://www.zlib.net/zlib-1.2.11.tar.xz"
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/zlib-prefix)
+    add_dependencies(${TARGET} zlib)
+#   find_package(ZLIB REQUIRED PATHS "${CMAKE_CURRENT_BINARY_DIR}/zlib-prefix")
+#   target_include_directories(${TARGET} PRIVATE ${ZLIB_INCLUDE_DIRS})
+#   find_library(ZLIB_STATIC_LIB libz.a)
+#   target_link_libraries(${TARGET} PUBLIC ${ZLIB_STATIC_LIB})
+else()
+    target_link_libraries(${TARGET} PUBLIC ZLIB::ZLIB)
+endif()
