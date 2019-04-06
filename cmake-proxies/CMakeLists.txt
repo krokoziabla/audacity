@@ -34,6 +34,8 @@ add_subdirectory( "libvorbis" )
 add_subdirectory( "lv2" )
 add_subdirectory( "mod-script-pipe" )
 add_subdirectory( "${LIB_SRC_DIRECTORY}portaudio-v19" "${CMAKE_CURRENT_BINARY_DIR}/portaudio-v19" EXCLUDE_FROM_ALL )
+target_include_directories(portaudio_static INTERFACE "${LIB_SRC_DIRECTORY}portaudio-v19/include")
+set_target_properties(portaudio_static PROPERTIES OSX_ARCHITECTURES "")
 
 cmake_policy(PUSH)
 cmake_policy(VERSION 2.8.11)
